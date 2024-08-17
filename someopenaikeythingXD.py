@@ -21,7 +21,7 @@ def check_internet_connection():
 def generate_random_letters(length):
 
   # Define the characters to choose from
-  characters = string.ascii_letters + string.digits
+  characters = string.ascii_letters + string.digits + string.punctuation
 
   # Convert characters to ASCII codes and create a CUDA tensor
   char_codes = torch.tensor([ord(c) for c in characters], dtype=torch.int32, device='cuda')
