@@ -18,55 +18,70 @@ def check_internet_connection():
     except subprocess.CalledProcessError:
         return False
 
-def generate_random_letters(length):
+def generate_random_key(total_length):
+  """
+  Generates a random key of specified total length with 1-3 hyphens, 1-3 underscores, and 'sk-' at the end.
+
+  Args:
+      total_length (int): The desired total length of the final string (including symbols).
+
+  Returns:
+      str: The generated random key.
+  """
 
   # Define the characters to choose from
   characters = string.ascii_letters + string.digits
+
+  # Calculate the length of the base random string
+  base_length = total_length - 3  # Account for 'sk-'
+
+  # Ensure enough space for at least one hyphen and one underscore
+  max_hyphens = max(1, min(3, base_length - 1))  # Leave space for at least one underscore
+  max_underscores = max(1, min(2, base_length - 1))  # Leave space for at least one hyphen
+
+  # Determine the number of hyphens and underscores to insert
+  num_hyphens = random.randint(1, max_hyphens)
+  num_underscores = random.randint(1, max_underscores)
+
+  # If there's not enough space for both minimum hyphens and underscores, adjust
+  if num_hyphens + num_underscores > base_length:
+      if num_hyphens > num_underscores:
+          num_hyphens = base_length - num_underscores
+      else:
+          num_underscores = base_length - num_hyphens
+
+  # Generate the base random string, accounting for space needed for symbols
+  adjusted_base_length = base_length - num_hyphens - num_underscores
 
   # Convert characters to ASCII codes and create a CUDA tensor
   char_codes = torch.tensor([ord(c) for c in characters], dtype=torch.int32, device='cuda')
 
   # Generate random indices within the range of available characters
-  random_indices = torch.randint(0, len(characters), (length,), dtype=torch.int32, device='cuda')
+  random_indices = torch.randint(0, len(characters), (adjusted_base_length,), dtype=torch.int32, device='cuda')
 
   # Use the random indices to select characters from the char_codes tensor
   random_char_codes = char_codes[random_indices]
 
   # Convert the ASCII codes back to characters and join them into a string
-  random_characters = ''.join([chr(code) for code in random_char_codes.cpu().numpy()])
+  base_string = ''.join([chr(code) for code in random_char_codes.cpu().numpy()])
 
-  return random_characters
+  # Create a list to hold all characters (base string + symbols)
+  all_chars = list(base_string)
 
-def generate_random_letters_with_symbols(length):
-  """
-  Generates a random string of specified length with hyphens and underscores.
+  # Insert hyphens at random positions
+  hyphen_positions = random.sample(range(len(all_chars)), num_hyphens)
+  for pos in hyphen_positions:
+      all_chars.insert(pos, '-')
 
-  Args:
-      length (int): The desired length of the random string (excluding symbols).
+  # Insert underscores at random positions
+  underscore_positions = random.sample(range(len(all_chars)), num_underscores)
+  for pos in underscore_positions:
+      all_chars.insert(pos, '_')
 
-  Returns:
-      str: The generated random string with symbols inserted.
-  """
+  # Add 'sk-' at the end
+  final_string = ''.join(all_chars)
+  return final_string
 
-  # Generate the base random string
-  base_string = generate_random_letters(length)
-
-  # Determine the number of hyphens and underscores to insert
-  num_hyphens = random.randint(0, 3)
-  num_underscores = random.randint(0, 3)
-
-  # Generate random insertion positions
-  positions = random.sample(range(length + 1), num_hyphens + num_underscores)
-
-  # Insert hyphens and underscores at the chosen positions
-  output_string = list(base_string)
-  for i, pos in enumerate(positions):
-      if i < num_hyphens:
-          output_string.insert(pos, '-')
-      else:
-          output_string.insert(pos, '_')
-
-  return 'sk-' + ''.join(output_string)
 
 print('''
 
@@ -114,7 +129,7 @@ def add_text_to_file(text):
 
 while True:
     if check_internet_connection() is True:
-        test_the_key = generate_random_letters_with_symbols(89)
+        test_the_key =  generate_random_key(98)
         try:
             client = OpenAI(
             api_key =  test_the_key
